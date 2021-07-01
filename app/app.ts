@@ -35,27 +35,17 @@ app.use(session({
 const authenticationData: any = (req: Request, res: Response) => {
   return {
     decodedAccessToken: req.session.decodedAccessToken,
-    tokenSet: req.session.tokenSet,
-    allTenants: req.session.allTenants,
-    activeTenant: req.session.activeTenant,
+    tokenSet: req.session.tokenSet
   };
 };
 
 app.get('/', async (req: Request, res: Response) => {
   try {
     const tokenSet: TokenSet = await xero.getClientCredentialsToken();
-    await xero.updateTenants();
-
     const decodedAccessToken: XeroAccessToken = jwtDecode(tokenSet.access_token);
-
     req.session.decodedAccessToken = decodedAccessToken;
     req.session.tokenSet = tokenSet;
-    req.session.allTenants = xero.tenants;
-    // XeroClient is sorting tenants behind the scenes so that most recent / active connection is at index 0
-    req.session.activeTenant = xero.tenants[0];
-
     const authData: any = authenticationData(req, res);
-
     res.json(authData);
   } catch (err) {
     res.json(err);
@@ -67,7 +57,7 @@ app.get('/invoices', async (req: Request, res: Response) => {
     const tokenSet: TokenSet = await xero.readTokenSet();
     console.log(tokenSet.expired() ? 'expired' : 'valid');
 
-    const response: any = await xero.accountingApi.getInvoices(req.session.activeTenant.tenantId);
+    const response: any = await xero.accountingApi.getInvoices('');
     res.json(response.body);
   } catch (err) {
     res.json(err);
@@ -79,7 +69,7 @@ app.get('/contacts', async (req: Request, res: Response) => {
     const tokenSet: TokenSet = await xero.readTokenSet();
     console.log(tokenSet.expired() ? 'expired' : 'valid');
 
-    const response: any = await xero.accountingApi.getContacts(req.session.activeTenant.tenantId);
+    const response: any = await xero.accountingApi.getContacts('');
     res.json(response.body);
   } catch (err) {
     res.json(err);
